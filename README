@@ -1,1 +1,14 @@
-Open the Server.sln with Visual Basic 2008 Express. Now just compile and you will have your own Chat-Server! You can change the config to settings of your choice!
+Open the ChatServ.sln with Visual Basic 2008 to compile!
+
+Admin Commands (default beginning is "/"):
+
+/kick username
+/shutdown
+/announce text(buggy right now, it will disconnect your client)
+
+User Commands:
+
+!afk
+!notafk
+#admin (to identify as admin!)
+#info (shows your client info)
