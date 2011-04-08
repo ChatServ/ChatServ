@@ -4,19 +4,23 @@
 Imports System.Net.Sockets
 Imports System.IO
 Imports System.Net
+Imports scripts.conf
 
 Module server
     Dim scriptsconfiguration As scripts.configuration = New scripts.configuration()
     Dim scriptslog As scripts.log = New scripts.log()
+    Dim conf As scripts.conf = New scripts.conf()
     Dim time As String = Date.Now
     Dim port As String
     Dim _REVISION As String = My.Application.Info.Version.Revision.ToString
     Private server As TcpListener
     Private client As New TcpClient
-    Private ipendpoint As IPEndPoint = New IPEndPoint(scriptsconfiguration.ReadLine("config.ini", 5), scriptsconfiguration.ReadLine("config.ini", 7)) ' eingestellt ist port 8000. dieser muss ggf. freigegeben sein!
+    Private config_admpwd As String = conf.load("admin", "password")
+    Private config_cmd As String = conf.load("admin", "cmd")
+    Private config_ip As String = conf.load("network", "ip") 'currently buggy when other ip than 0.0.0.0
+    Private config_port As String = conf.load("network", "port")
+    Private ipendpoint As IPEndPoint = New IPEndPoint(config_ip, config_port)
     Private list As New List(Of Connection)
-    Private config_admpwd As String = scriptsconfiguration.ReadLine("config.ini", 11)
-    Private config_cmd As String = scriptsconfiguration.ReadLine("config.ini", 9)
 
     Private Structure Connection
         Dim stream As NetworkStream
@@ -49,32 +53,32 @@ Module server
     End Sub
 
     Sub Main()
-        If My.Computer.FileSystem.FileExists("config.ini") = False Then
-            MsgBox("Could not find the config.ini!")
-            End
+        If IO.File.Exists("config.ini") = False Then
+            MsgBox("config.ini doesn't exist!", MsgBoxStyle.Critical, "config missing")
         End If
         If ConsoleSpecialKey.ControlC Then
             End
         End If
         Console.ForegroundColor = ConsoleColor.Green
         Console.Title = "ChatServ Server"
-        Console.WriteLine("#Chat-Server Revision: " & _REVISION)
-        scriptslog.LogMessage("#Chat-Server Revision: " + _REVISION, )
-        Console.WriteLine("#<CTRL-C>")
-        scriptslog.LogMessage("#<CTRL-C>")
-        Console.WriteLine("#© Mechi Community")
-        scriptslog.LogMessage("#© Mechi Community")
-        Console.WriteLine("#Loaded at " & time)
-        scriptslog.LogMessage("#Loaded at " & time)
-        Console.WriteLine("#Listening on " & scriptsconfiguration.ReadLine("config.ini", 5) & ":" & scriptsconfiguration.ReadLine("config.ini", 7))
-        scriptslog.LogMessage("#Listening on " & scriptsconfiguration.ReadLine("config.ini", 5) & ":" & scriptsconfiguration.ReadLine("config.ini", 7))
+        Console.WriteLine("# Chat-Server Revision: " & _REVISION)
+        scriptslog.LogMessage("# Chat-Server Revision: " + _REVISION, )
+        Console.WriteLine("# <CTRL-C>")
+        scriptslog.LogMessage("# <CTRL-C>")
+        Console.WriteLine("# © Mechi Community")
+        scriptslog.LogMessage("# © Mechi Community")
+        Console.WriteLine("# Commandstring is " + config_cmd)
+        scriptslog.LogMessage("# Commandstring is " + config_cmd)
+        Console.WriteLine("# Loaded at " & time)
+        scriptslog.LogMessage("# Loaded at " & time)
+        server = New TcpListener(ipendpoint)
+        server.Start()
+        Console.WriteLine("# Listening on " & config_ip & ":" & config_port)
+        scriptslog.LogMessage("# Listening on " & config_ip & ":" & config_port)
+        My.Computer.Audio.PlaySystemSound(Media.SystemSounds.Beep)
         Console.WriteLine("*******************************************************************************")
         scriptslog.LogMessage("*******************************************************************************")
         Console.ForegroundColor = ConsoleColor.Cyan
-        server = New TcpListener(ipendpoint)
-        server.Start()
-        My.Computer.Audio.PlaySystemSound(Media.SystemSounds.Beep)
-
         While True
             client = server.AcceptTcpClient
             Dim c As New Connection
@@ -101,7 +105,7 @@ Module server
             Try
                 Dim announce As String = con.announce
                 Dim tmp As String = con.streamr.ReadLine
-                If tmp.StartsWith(scriptsconfiguration.ReadLine("config.ini", 9) & "kick") And scriptsconfiguration.ReadLine("config.ini", 11) = con.pwd Then
+                If tmp.StartsWith(config_cmd & "kick") And config_admpwd = con.pwd Then
                     Console.ForegroundColor = ConsoleColor.Yellow
                     Dim Kickname As String = tmp.Remove(0, 6)
                     For Each Connection In list
@@ -114,15 +118,15 @@ Module server
                             Exit For
                         End If
                     Next
-                ElseIf tmp.StartsWith(scriptsconfiguration.ReadLine("config.ini", 9) & "shutdown") And scriptsconfiguration.ReadLine("config.ini", 11) = con.pwd Then
+                ElseIf tmp.StartsWith(config_cmd & "shutdown") And config_admpwd = con.pwd Then
                     Console.ForegroundColor = ConsoleColor.Yellow
                     scriptslog.LogMessage("***Server shutdown by " + con.nick + "****")
                     End
-                ElseIf tmp.StartsWith(scriptsconfiguration.ReadLine("config.ini", 9) + "announce") And scriptsconfiguration.ReadLine("config.ini", 11) = con.pwd Then
+                ElseIf tmp.StartsWith(config_cmd + "announce") And config_admpwd = con.pwd Then
                     Console.ForegroundColor = ConsoleColor.Cyan
-                    Console.WriteLine("!" + time & " " & tmp.Replace(scriptsconfiguration.ReadLine("config.ini", 9) + "announce", "Announce by " + con.nick + ":"))
-                    scriptslog.LogMessage("!" + time & " " & tmp.Replace(scriptsconfiguration.ReadLine("config.ini", 9) + "announce", "Announce by " + con.nick + ":"))
-                    SendToAllClients(tmp.Replace(scriptsconfiguration.ReadLine("config.ini", 9) + "announce", "Announce by " + con.nick + ":"))
+                    Console.WriteLine("!" + time & " " & tmp.Replace(config_cmd + "announce", "Announce by " + con.nick + ":"))
+                    scriptslog.LogMessage("!" + time & " " & tmp.Replace(config_cmd + "announce", "Announce by " + con.nick + ":"))
+                    SendToAllClients(tmp.Replace(config_cmd + "announce", "Announce by " + con.nick + ":"))
                 ElseIf tmp.StartsWith("!afk") Then
                     Console.ForegroundColor = ConsoleColor.Yellow
                     Console.WriteLine("#" & time & " " & con.nick & " is AFK right now")
