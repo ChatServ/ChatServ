@@ -6,7 +6,6 @@ Imports System.IO
 Imports System.Net
 
 Module server
-    Dim scriptsconfiguration As scripts.configuration = New scripts.configuration()
     Dim scriptslog As scripts.log = New scripts.log()
     Dim conf As scripts.conf = New scripts.conf()
     Dim time As String = Date.Now
