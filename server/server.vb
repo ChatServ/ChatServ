@@ -4,7 +4,6 @@
 Imports System.Net.Sockets
 Imports System.IO
 Imports System.Net
-Imports scripts.conf
 
 Module server
     Dim scriptsconfiguration As scripts.configuration = New scripts.configuration()
